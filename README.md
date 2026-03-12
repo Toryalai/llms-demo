@@ -328,7 +328,7 @@ This makes it possible to run a 120B parameter model with as little as 8 GB of V
 
 ### Model: openai/gpt-oss-120b
 
-A 120B parameter Mixture-of-Experts (MoE) model released by OpenAI. We use the mxfp4-quantized [GGUF version](https://huggingface.co/ggml-org/gpt-oss-120b-GGUF) published by [ggml-org](https://github.com/ggml-org) — the organization behind [llama.cpp](https://github.com/ggml-org/llama.cpp), the [GGML](https://github.com/ggml-org/ggml) tensor library, and the [GGUF](https://huggingface.co/docs/hub/gguf) model format.
+A 120B parameter Mixture-of-Experts (MoE) model released by OpenAI. We use the mxfp4-quantized [GGUF version](https://huggingface.co/ggml-org/gpt-oss-120b-GGUF) published by [ggml-org](https://github.com/ggml-org) - the organization behind [llama.cpp](https://github.com/ggml-org/llama.cpp), the [GGML](https://github.com/ggml-org/ggml) tensor library, and the [GGUF](https://huggingface.co/docs/hub/gguf) model format.
 
 - [Model card (OpenAI)](https://huggingface.co/openai/gpt-oss-120b)
 - [GGUF quantization (ggml-org)](https://huggingface.co/ggml-org/gpt-oss-120b-GGUF)
