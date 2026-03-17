@@ -8,19 +8,23 @@ This section contains hands-on activities for practicing prompting techniques an
 
 ### Activity 1: LLM word problems
 
-Practice basic prompting techniques and chain-of-thought reasoning by solving word problems with an LLM.
+Practice basic prompting techniques and chain-of-thought reasoning by solving word problems with an LLM using the Gradio web interface.
 
 **Duration:** 30-45 minutes
 
 **Skills practiced:**
 - Basic prompting strategies
 - Chain-of-thought reasoning
-- Iterative prompt refinement
-- Conversation history management
+- System prompt experimentation
+- Comparing different prompting approaches
 
 **Prerequisites:**
 - Completed [Quickstart](quickstart.md) setup
 - Familiarity with Lesson 46 (Prompting fundamentals)
+
+**What you'll use:**
+- Gradio chatbot web interface (`src/gradio_chatbot.py`)
+- System prompt customization
 
 **Location:** `activities/activity_1_word_problems.md`
 
@@ -50,15 +54,23 @@ Enhance the ReAct agent chatbot by adding custom tools and testing multi-step re
 **Duration:** 45-60 minutes
 
 **Skills practiced:**
-- Creating LangChain tools
-- Understanding agent decision-making
-- Debugging tool execution
-- Multi-step problem solving
+- Creating LangChain tools with the `@tool` decorator
+- Understanding agent decision-making and tool selection
+- Debugging tool execution and agent behavior
+- Multi-step problem solving with tool chaining
 
 **Prerequisites:**
 - Completed Activities 1 and 2
 - Python programming experience
 - Understanding of Lesson 47 (Advanced prompting - ReAct)
+- Familiarity with the ReAct agent demo
+
+**What you'll do:**
+- Study existing tool implementations
+- Create a new tool (temperature converter, text analyzer, or custom)
+- Register your tool with the agent
+- Test single-tool and multi-tool reasoning
+- Debug and improve your implementation
 
 **Location:** `activities/activity_3_react_agent_tools.md`
 
