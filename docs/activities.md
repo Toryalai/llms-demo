@@ -4,9 +4,7 @@ This section contains hands-on activities for practicing prompting techniques an
 
 > **Note:** Activity files are available in the [GitHub repository](https://github.com/gperdrizet/llms-demo/tree/main/activities) and include detailed instructions and starter code.
 
-## Available activities
-
-### Activity 1: LLM word problems
+## Activity 1: LLM word problems
 
 Practice basic prompting techniques and chain-of-thought reasoning by solving word problems with an LLM using the Gradio web interface.
 
@@ -28,7 +26,7 @@ Practice basic prompting techniques and chain-of-thought reasoning by solving wo
 
 **Location:** `activities/activity_1_word_problems.md`
 
-### Activity 2: Text summarization
+## Activity 2: Text summarization
 
 Build a practical text summarization script applying various prompting techniques.
 
@@ -47,7 +45,7 @@ Build a practical text summarization script applying various prompting technique
 
 **Location:** `activities/activity_2_text_summarization.md`
 
-### Activity 3: Extending the ReAct agent
+## Activity 3: Extending the ReAct agent
 
 Enhance the ReAct agent chatbot by adding custom tools and testing multi-step reasoning.
 
