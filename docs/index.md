@@ -1,6 +1,14 @@
 # Home
 
 [![Documentation](https://img.shields.io/badge/docs-github%20pages-blue)](https://gperdrizet.github.io/llms-demo/)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C?logo=langchain&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-FFD21E?logo=huggingface&logoColor=black)
+![Gradio](https://img.shields.io/badge/Gradio-UI-FF7C00?logo=gradio&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-local%20LLM-black?logo=ollama&logoColor=white)
+![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-green)
+![PostgreSQL](https://img.shields.io/badge/pgvector-PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-E8572A)
 
 Example code demonstrating local LLM inference with various backends and libraries.
 
