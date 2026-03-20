@@ -1,11 +1,11 @@
 """RAG Knowledge System demo
 
 This demo shows how to build a Retrieval-Augmented Generation (RAG) pipeline:
-1. **Ingest** — load documents from a source, embed them, store in pgvector
-2. **Query** — retrieve relevant chunks and pass them as context to an LLM
+1. **Ingest** - load documents from a source, embed them, store in pgvector
+2. **Query** - retrieve relevant chunks and pass them as context to an LLM
 
 Architecture:
-    Source (Wikipedia) → Ingestor → Embeddings → PGVector
+                  Source → Ingestor → Embeddings → PGVector
                                                       ↓
     Question → Retriever → Context → Prompt → LLM → Answer
 
@@ -19,7 +19,11 @@ Environment variables:
 
 import os
 import sys
+import logging
 from pathlib import Path
+
+# Suppress noisy key warnings from sentence-transformers checkpoints
+logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
 import gradio as gr
 from dotenv import load_dotenv
@@ -30,6 +34,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langchain_postgres import PGVector
+from sqlalchemy import create_engine
 
 # Add src directory to path so relative ingestor imports work
 sys.path.insert(0, str(Path(__file__).parent))
@@ -62,6 +67,7 @@ db_port = os.environ.get("DB_PORT", "5432")
 db_name = os.environ.get("DB_NAME")
 
 missing = [k for k, v in {"DB_USER": db_user, "DB_PASSWORD": db_password, "DB_HOST": db_host, "DB_NAME": db_name}.items() if not v]
+
 if missing:
     raise EnvironmentError(
         f"Missing required environment variable(s): {', '.join(missing)}\n"
@@ -70,23 +76,15 @@ if missing:
 
 database_url = f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
+# pool_pre_ping=True tests each connection before use and discards stale ones
+db_engine = create_engine(database_url, pool_pre_ping=True)
+
 vector_store = PGVector(
     embeddings=embeddings,
     collection_name=collection_name,
-    connection=database_url,
+    connection=db_engine,
     use_jsonb=True,
 )
-
-# ---------------------------------------------------------------------------
-# Ingestor registry
-# Students: add a new entry here to make your ingestor appear in the UI.
-# ---------------------------------------------------------------------------
-
-INGESTORS = {
-    "Wikipedia": WikipediaIngestor(),
-    # "Files":     FileIngestor(directory="data/"),   # <-- Activity 5, Part 2
-    # "URL":       URLIngestor(),                     # <-- Activity 5, Part 3
-}
 
 # ---------------------------------------------------------------------------
 # LLM backends
@@ -100,6 +98,7 @@ llamacpp_server = os.environ.get("PERDRIZET_URL", "localhost:8502")
 if llamacpp_server.startswith("localhost") or llamacpp_server.startswith("127."):
     llamacpp_api_key = os.environ.get("LLAMA_API_KEY", "dummy")
     llamacpp_base_url = f"http://{llamacpp_server}/v1"
+
 else:
     llamacpp_api_key = os.environ.get("PERDRIZET_API_KEY")
     llamacpp_base_url = f"https://{llamacpp_server}/v1"
@@ -115,8 +114,13 @@ llamacpp_client = ChatOpenAI(
 llamacpp_model = "gpt-oss-20b"
 
 # ---------------------------------------------------------------------------
-# RAG prompt
+# Ingestor registry
+# Students: add a new entry here to make your ingestor appear in the UI.
 # ---------------------------------------------------------------------------
+
+INGESTORS = {
+    "Wikipedia": WikipediaIngestor(),
+}
 
 RAG_PROMPT = ChatPromptTemplate.from_messages([
     (
@@ -139,12 +143,15 @@ def _format_docs(docs) -> str:
 
 
 def _format_sources(docs) -> str:
+
     sources = []
+
     for i, doc in enumerate(docs, 1):
         title = doc.metadata.get("title", "Unknown")
         source = doc.metadata.get("source", "")
         preview = doc.page_content[:200].replace("\n", " ")
         sources.append(f"[{i}] {title}\n    {source}\n    \"{preview}...\"")
+
     return "\n\n".join(sources)
 
 
@@ -154,6 +161,7 @@ def _format_sources(docs) -> str:
 
 def ingest_documents(topic: str, ingestor_name: str) -> str:
     """Load documents from the selected source and store them in pgvector."""
+
     if not topic.strip():
         return "Please enter a topic."
 
@@ -161,6 +169,7 @@ def ingest_documents(topic: str, ingestor_name: str) -> str:
 
     try:
         docs = ingestor.load(topic.strip())
+
     except Exception as e:
         return f"Error loading documents: {e}"
 
@@ -169,36 +178,80 @@ def ingest_documents(topic: str, ingestor_name: str) -> str:
 
     try:
         vector_store.add_documents(docs)
+
     except Exception as e:
         return f"Error storing documents: {e}"
 
     # Count unique source articles
     unique_sources = {doc.metadata.get("source", "") for doc in docs}
+
+    # Summarize extracted metadata per file so the user can verify extraction
+    per_file: dict[str, dict] = {}
+
+    for doc in docs:
+
+        key = doc.metadata.get("filename") or doc.metadata.get("source", "unknown")
+
+        if key not in per_file:
+            per_file[key] = {
+                "title": doc.metadata.get("title"),
+                "author": doc.metadata.get("author"),
+            }
+
+    file_lines = []
+
+    for fname, meta in per_file.items():
+
+        parts = [f"  {fname}"]
+
+        if meta["title"]:
+            parts.append(f"title: {meta['title']}")
+
+        else:
+            parts.append("title: (not extracted)")
+
+        if meta["author"]:
+            parts.append(f"author: {meta['author']}")
+
+        else:
+            parts.append("author: (not extracted)")
+
+        file_lines.append(" | ".join(parts))
+
+    extraction_summary = "\n".join(file_lines) if file_lines else ""
+
     return (
-        f"Ingested {len(docs)} chunks from {len(unique_sources)} article(s).\n"
-        f"Source: {ingestor.source_type} | Topic: {topic}"
+        f"Ingested {len(docs)} chunks from {len(unique_sources)} file(s).\n"
+        f"Source: {ingestor.source_type} | Path: {topic}\n\n"
+        f"Extracted metadata:\n{extraction_summary}"
     )
 
 
 def clear_collection() -> str:
     """Delete all documents from the vector store collection."""
+
     global vector_store
+
     try:
         vector_store.delete_collection()
+
         # Re-initialise so the store is ready for new ingestions
         vector_store = PGVector(
             embeddings=embeddings,
             collection_name=collection_name,
-            connection=database_url,
+            connection=db_engine,
             use_jsonb=True,
         )
+
         return "Collection cleared. Ready for new ingestion."
+
     except Exception as e:
         return f"Error clearing collection: {e}"
 
 
 def query_rag(question: str, backend: str, k: int) -> tuple[str, str]:
     """Retrieve relevant chunks and generate a grounded answer."""
+
     if not question.strip():
         return "Please enter a question.", ""
 
@@ -223,10 +276,12 @@ def query_rag(question: str, backend: str, k: int) -> tuple[str, str]:
 
     try:
         answer = chain.invoke(question)
+    
     except Exception as e:
         return f"Error generating answer: {e}", ""
 
     sources_text = _format_sources(retrieved_docs)
+
     return answer, sources_text
 
 
@@ -253,7 +308,7 @@ with gr.Blocks(title="RAG Knowledge System") as demo:
         # Tab 1: Ingest
         # ------------------------------------------------------------------
         with gr.Tab("1. Ingest documents"):
-            gr.Markdown("""
+            ingest_instructions = gr.Markdown("""
             Type a Wikipedia topic to fetch and store articles in the knowledge base.
             You can ingest multiple topics — they accumulate in the same collection.
             """)
@@ -277,6 +332,33 @@ with gr.Blocks(title="RAG Knowledge System") as demo:
 
                 with gr.Column():
                     ingest_status = gr.Textbox(label="Status", lines=4, interactive=False)
+
+            # Update label/placeholder/instructions when ingestor selection changes
+            _SOURCE_META = {
+                "Wikipedia": (
+                    "Wikipedia topic",
+                    "e.g. Python programming language",
+                    "Type a Wikipedia topic to fetch and store articles in the knowledge base.\n"
+                    "You can ingest multiple topics - they accumulate in the same collection.",
+                ),
+                # Students: add entries here to customise label/placeholder/description per ingestor
+            }
+
+            def _update_source_ui(ingestor_name):
+                meta = _SOURCE_META.get(
+                    ingestor_name,
+                    (ingestor_name + " source", "", "Enter the source for " + ingestor_name + ".")
+                )
+                return (
+                    gr.update(label=meta[0], placeholder=meta[1]),
+                    gr.update(value=meta[2]),
+                )
+
+            ingestor_radio.change(
+                fn=_update_source_ui,
+                inputs=[ingestor_radio],
+                outputs=[topic_input, ingest_instructions],
+            )
 
             ingest_btn.click(
                 fn=ingest_documents,
